@@ -1,9 +1,9 @@
 import { title } from "@/components/primitives";
 
-export default function AboutPage() {
+export default function ITWPage() {
   return (
     <div>
-      <h1 className={title()}>About</h1>
+      <h1 className={title()}>In the works</h1>
     </div>
   );
 }

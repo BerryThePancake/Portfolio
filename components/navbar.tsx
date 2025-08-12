@@ -1,141 +1,109 @@
+'use client'
+
+import React from 'react'
+import NextLink from 'next/link'
+import { Link } from '@heroui/link'
+import { Input } from '@heroui/input'
 import {
   Navbar as HeroUINavbar,
-  NavbarContent,
-  NavbarMenu,
-  NavbarMenuToggle,
   NavbarBrand,
+  NavbarContent,
   NavbarItem,
+  NavbarMenu,
   NavbarMenuItem,
-} from "@heroui/navbar";
-import { Button } from "@heroui/button";
-import { Kbd } from "@heroui/kbd";
-import { Link } from "@heroui/link";
-import { Input } from "@heroui/input";
-import { link as linkStyles } from "@heroui/theme";
-import NextLink from "next/link";
-import clsx from "clsx";
+  NavbarMenuToggle,
+} from '@heroui/navbar'
+import { ThemeSwitch } from '@/components/theme-switch'
 
-import { siteConfig } from "@/config/site";
-import { ThemeSwitch } from "@/components/theme-switch";
-import {
-  TwitterIcon,
-  GithubIcon,
-  DiscordIcon,
-  HeartFilledIcon,
-  SearchIcon,
-  Logo,
-} from "@/components/icons";
+// Inline SVG mask that renders /public/cowboy-hat-logo.jpg as a silhouette
+const HatLogo = ({ className = 'h-8 w-10 text-slate-100' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 100 100" aria-hidden="true">
+    <defs>
+      <filter id="invert">
+        <feColorMatrix type="matrix" values="-1 0 0 0 1  0 -1 0 0 1  0 0 -1 0 1  0 0 0 1 0" />
+      </filter>
+      <mask id="hatMask">
+        <image href="/cowboy-hat-logo.jpg" x="0" y="0" width="100" height="100" preserveAspectRatio="xMidYMid meet" filter="url(#invert)" />
+      </mask>
+    </defs>
+    <rect x="0" y="0" width="100" height="100" fill="currentColor" mask="url(#hatMask)" />
+  </svg>
+)
+
+// Nav items
+const items = [
+  { href: '/', label: 'Home' },
+  { href: '/projects', label: 'Projects' },
+  { href: '/itw', label: 'ITW' },
+  { href: '/resume', label: 'Résumé' },
+  { href: '/contact-me', label: 'Contact' },
+]
 
 export const Navbar = () => {
   const searchInput = (
     <Input
       aria-label="Search"
-      classNames={{
-        inputWrapper: "bg-default-100",
-        input: "text-sm",
-      }}
-      endContent={
-        <Kbd className="hidden lg:inline-block" keys={["command"]}>
-          K
-        </Kbd>
-      }
-      labelPlacement="outside"
       placeholder="Search..."
-      startContent={
-        <SearchIcon className="text-base text-default-400 pointer-events-none flex-shrink-0" />
-      }
+      size="sm"
+      classNames={{
+        inputWrapper:
+          'bg-slate-800/60 border border-slate-700 focus-within:border-slate-500',
+        input: 'text-sm',
+      }}
       type="search"
     />
-  );
+  )
 
   return (
-    <HeroUINavbar maxWidth="xl" position="sticky">
-      <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
-        <NavbarBrand as="li" className="gap-3 max-w-fit">
-          <NextLink className="flex justify-start items-center gap-1" href="/">
-            <Logo />
-            <p className="font-bold text-inherit">ACME</p>
+    <HeroUINavbar maxWidth="xl" position="sticky" className="bg-transparent">
+      {/* Left: logo + name pill */}
+      <NavbarContent justify="start" className="gap-3">
+        <NavbarBrand as="div" className="gap-3 max-w-fit items-center">
+          <HatLogo className="h-8 w-10 text-slate-100" />
+          {/* Name pill now links to Contact page */}
+          <NextLink
+            className="px-3 py-1 rounded-full bg-slate-800/60 border border-slate-700 hover:border-slate-500 transition font-semibold tracking-wide"
+            href="/contact-me"
+            aria-label="Contact Austin"
+          >
+            Austin&nbsp;Riha
           </NextLink>
         </NavbarBrand>
-        <ul className="hidden lg:flex gap-4 justify-start ml-2">
-          {siteConfig.navItems.map((item) => (
-            <NavbarItem key={item.href}>
-              <NextLink
-                className={clsx(
-                  linkStyles({ color: "foreground" }),
-                  "data-[active=true]:text-primary data-[active=true]:font-medium",
-                )}
-                color="foreground"
-                href={item.href}
-              >
-                {item.label}
-              </NextLink>
-            </NavbarItem>
-          ))}
-        </ul>
       </NavbarContent>
 
-      <NavbarContent
-        className="hidden sm:flex basis-1/5 sm:basis-full"
-        justify="end"
-      >
-        <NavbarItem className="hidden sm:flex gap-2">
-          <Link isExternal aria-label="Twitter" href={siteConfig.links.twitter}>
-            <TwitterIcon className="text-default-500" />
-          </Link>
-          <Link isExternal aria-label="Discord" href={siteConfig.links.discord}>
-            <DiscordIcon className="text-default-500" />
-          </Link>
-          <Link isExternal aria-label="Github" href={siteConfig.links.github}>
-            <GithubIcon className="text-default-500" />
-          </Link>
-          <ThemeSwitch />
-        </NavbarItem>
-        <NavbarItem className="hidden lg:flex">{searchInput}</NavbarItem>
-        <NavbarItem className="hidden md:flex">
-          <Button
-            isExternal
-            as={Link}
-            className="text-sm font-normal text-default-600 bg-default-100"
-            href={siteConfig.links.sponsor}
-            startContent={<HeartFilledIcon className="text-danger" />}
-            variant="flat"
-          >
-            Sponsor
-          </Button>
-        </NavbarItem>
+      {/* Center: nav links */}
+      <NavbarContent justify="center" className="hidden md:flex gap-6">
+        {items.map((i) => (
+          <NavbarItem key={i.href}>
+            {i.href.endsWith('.pdf') ? (
+              <Link href={i.href} target="_blank" isExternal rel="noopener">{i.label}</Link>
+            ) : (
+              <Link as={NextLink} href={i.href}>{i.label}</Link>
+            )}
+          </NavbarItem>
+        ))}
       </NavbarContent>
 
-      <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
-        <Link isExternal aria-label="Github" href={siteConfig.links.github}>
-          <GithubIcon className="text-default-500" />
-        </Link>
+      {/* Right: search + theme + mobile toggle */}
+      <NavbarContent justify="end" className="items-center gap-2">
+        <div className="hidden sm:block">{searchInput}</div>
         <ThemeSwitch />
-        <NavbarMenuToggle />
+        <NavbarMenuToggle className="md:hidden" aria-label="Open menu" />
       </NavbarContent>
 
+      {/* Mobile menu */}
       <NavbarMenu>
-        {searchInput}
-        <div className="mx-4 mt-2 flex flex-col gap-2">
-          {siteConfig.navMenuItems.map((item, index) => (
-            <NavbarMenuItem key={`${item}-${index}`}>
-              <Link
-                color={
-                  index === 2
-                    ? "primary"
-                    : index === siteConfig.navMenuItems.length - 1
-                      ? "danger"
-                      : "foreground"
-                }
-                href="#"
-                size="lg"
-              >
-                {item.label}
-              </Link>
-            </NavbarMenuItem>
-          ))}
-        </div>
+        <div className="px-2 py-3">{searchInput}</div>
+        {items.map((i) => (
+          <NavbarMenuItem key={`m-${i.href}`}>
+            {i.href.endsWith('.pdf') ? (
+              <Link href={i.href} target="_blank" isExternal rel="noopener" className="w-full">{i.label}</Link>
+            ) : (
+              <Link as={NextLink} href={i.href} className="w-full">{i.label}</Link>
+            )}
+          </NavbarMenuItem>
+        ))}
       </NavbarMenu>
     </HeroUINavbar>
-  );
-};
+  )
+}
