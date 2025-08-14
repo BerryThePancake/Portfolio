@@ -37,6 +37,14 @@ export default function MplSim() {
 
       const pyTheme = isDark ? "dark" : "light";
 
+      // Determine initial figure size before running Python
+      const dpi = 120;
+      const rect0 = targetRef.current?.getBoundingClientRect();
+      const side0 = rect0 ? Math.max(200, Math.floor(Math.min(rect0.width, rect0.height) - 4)) : 600;
+      pyodide.globals.set("JS_W", side0);
+      pyodide.globals.set("JS_H", side0);
+      pyodide.globals.set("JS_DPI", dpi);
+
       let code = String.raw`
 import sys, traceback
 try:
@@ -76,6 +84,7 @@ try:
         substeps   = 6 if stable else 1
         CAP_NORM   = 2e3 if stable else BASE_CAP_NORM
         HARD_CLIP  = 5e3 if stable else BASE_HARD_CLIP
+
         local_dt = dt / substeps
 
         Y   = initial.copy().astype(np.float64)
@@ -84,10 +93,10 @@ try:
 
         for i in range(1, pts):
             for _ in range(substeps):
-                k1 = deriv(Y, alpha, beta)
+                k1 = deriv(Y,                    alpha, beta)
                 k2 = deriv(Y + 0.5 * local_dt * k1, alpha, beta)
                 k3 = deriv(Y + 0.5 * local_dt * k2, alpha, beta)
-                k4 = deriv(Y + local_dt * k3, alpha, beta)
+                k4 = deriv(Y +        local_dt * k3, alpha, beta)
                 Y  = Y + (local_dt / 6.0) * (k1 + 2*k2 + 2*k3 + k4)
                 np.clip(Y, -HARD_CLIP, HARD_CLIP, out=Y)
                 if not np.isfinite(Y).all():
@@ -113,7 +122,12 @@ try:
     stable_mode = False
     data = integrate(init_alpha, init_beta, stable=stable_mode)
 
-    fig = plt.figure(figsize=(8, 8), dpi=120)  # start square figure
+    # Use JS-provided size for initial figure
+    try:
+        JS_W, JS_H, JS_DPI
+    except NameError:
+        JS_W, JS_H, JS_DPI = 600, 600, 120
+    fig = plt.figure(figsize=(JS_W/JS_DPI, JS_H/JS_DPI), dpi=JS_DPI)
     FIG = fig
     ax  = fig.add_subplot(projection='3d')
 
@@ -223,9 +237,8 @@ try:
     btn.on_clicked(toggle_stability)
 
     def set_fig_size_px(w, h, dpi=120):
-        size = min(w, h) - 4  # tolerance so it doesn't overflow
         FIG.set_dpi(dpi)
-        FIG.set_size_inches(size/dpi, size/dpi, forward=True)
+        FIG.set_size_inches(w/dpi, h/dpi, forward=True)
         FIG.canvas.draw_idle()
 
     def apply_theme(theme):
@@ -259,30 +272,21 @@ except Exception:
 `;
       code = code.replace("__THEME__", pyTheme);
 
-      // Run Python, then wait for the WebAgg canvas to mount before first sizing
       await pyodide.runPythonAsync(code);
 
-      const waitForCanvas = async () => {
-        const root = targetRef.current;
-        if (!root) return;
-        for (let i = 0; i < 180; i++) { // ~3s max
-          if (root.querySelector('canvas')) return;
-          await new Promise((r) => setTimeout(r, 16));
-        }
-      };
-      await waitForCanvas();
-
-      const dpi = 120;
       const resize = () => {
         if (!targetRef.current || !pyodide) return;
         const rect = targetRef.current.getBoundingClientRect();
-        const boxSize = Math.min(rect.width, rect.height) - 4; // tolerance
-        pyodide.globals.set("JS_W", boxSize);
-        pyodide.globals.set("JS_H", boxSize);
+        const side = Math.max(200, Math.floor(Math.min(rect.width, rect.height) - 4));
+        pyodide.globals.set("JS_W", side);
+        pyodide.globals.set("JS_H", side);
         pyodide.globals.set("JS_DPI", dpi);
         pyodide.runPython("set_fig_size_px(JS_W, JS_H, JS_DPI)");
       };
+
       resize();
+      const ro = new ResizeObserver(resize);
+      if (targetRef.current) ro.observe(targetRef.current);
       window.addEventListener("resize", resize);
 
       const hideHeader = () => {
@@ -291,7 +295,7 @@ except Exception:
         const nodes = root.querySelectorAll("div, h1, h2");
         nodes.forEach((el) => {
           const txt = (el.textContent || "").trim();
-          if (/^Figure\s+\d+$/.test(txt)) {
+          if (/^Figure\\s+\\d+$/.test(txt)) {
             (el as HTMLElement).style.display = "none";
           }
         });
@@ -327,11 +331,16 @@ except Exception:
 
   return (
     <div className="w-full flex justify-center">
-      <div
-        ref={targetRef}
-        id="mpl-target"
-        className="w-full max-w-4xl aspect-square rounded-2xl shadow-lg overflow-hidden bg-transparent"
-      />
+      <div className="w-full flex justify-center">
+        <div className="rounded-2xl shadow-lg overflow-hidden bg-transparent" style={{ width: "min(95vw, 900px)" }}>
+          <div
+            ref={targetRef}
+            id="mpl-target"
+            className="w-full"
+            style={{ aspectRatio: "1 / 1" }}
+          />
+        </div>
+      </div>
 
       <style jsx global>{`
         #mpl-target .mpl-toolbar { display: none !important; }
@@ -340,7 +349,7 @@ except Exception:
         #mpl-target .mpl-message,
         #mpl-target h1,
         #mpl-target h2 { display: none !important; }
-        #mpl-target canvas { width: 100% !important; height: 100% !important; }
+        #mpl-target, #mpl-target canvas { width: 100% !important; height: 100% !important; }
       `}</style>
     </div>
   );
