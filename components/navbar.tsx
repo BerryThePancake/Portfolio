@@ -58,15 +58,25 @@ export const Navbar = () => {
     <HeroUINavbar maxWidth="xl" position="sticky" className="bg-transparent">
       {/* Left: logo + name pill */}
       <NavbarContent justify="start" className="gap-3">
-        <NavbarBrand as="div" className="gap-3 max-w-fit items-center">
-          <HatLogo className="h-8 w-10 text-slate-100" />
-          {/* Name pill now links to Contact page */}
+        <NavbarBrand as="div" className="gap-3 md:gap-4 max-w-fit items-center">
+          {/* Cowboy hat now acts as a button-like link to Home */}
+          <NextLink
+            href="/"
+            aria-label="Go to home"
+            title="Home"
+            className="inline-flex items-center justify-center -m-1 p-1 cursor-pointer transition hover:opacity-90 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-500/40 rounded-full"
+          >
+            <HatLogo className="h-10 w-12 md:h-12 md:w-14 text-slate-100" />
+            <span className="sr-only">Home</span>
+          </NextLink>
+
+          {/* Name pill still links to Contact page */}
           <NextLink
             className="px-3 py-1 rounded-full bg-slate-800/60 border border-slate-700 hover:border-slate-500 transition font-semibold tracking-wide"
             href="/contact-me"
             aria-label="Contact Austin"
           >
-            Austin&nbsp;Riha
+            Austin Riha
           </NextLink>
         </NavbarBrand>
       </NavbarContent>
